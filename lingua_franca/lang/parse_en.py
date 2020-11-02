@@ -45,7 +45,6 @@ def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
         The original text, with numbers subbed in where appropriate.
 
     """
-    text = text.lower()
     tokens = tokenize(text)
     numbers_to_replace = \
         _extract_numbers_with_text_en(tokens, short_scale, ordinals)
@@ -287,13 +286,13 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             next_val = None
             continue
 
-        word = token.word
+        word = token.word.lower()
         if word in _ARTICLES_EN or word in _NEGATIVES_EN:
             number_words.append(token)
             continue
 
-        prev_word = tokens[idx - 1].word if idx > 0 else ""
-        next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
+        prev_word = tokens[idx - 1].word.lower() if idx > 0 else ""
+        next_word = tokens[idx + 1].word.lower() if idx + 1 < len(tokens) else ""
 
         if is_numeric(word[:-2]) and \
                 (word.endswith("st") or word.endswith("nd") or word.endswith("rd") or word.endswith("th")):
@@ -316,7 +315,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 not is_fractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
             words_only = [token.word for token in number_words]
-            if number_words and not all([w in _ARTICLES_EN |
+            if number_words and not all([w.lower() in _ARTICLES_EN |
                                          _NEGATIVES_EN for w in words_only]):
                 break
             else:
@@ -470,8 +469,8 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
                 time_to_sum = True
                 for other_token in tokens[idx+1:]:
-                    if other_token.word in multiplies:
-                        if string_num_scale[other_token.word] >= current_val:
+                    if other_token.word.lower() in multiplies:
+                        if string_num_scale[other_token.word.lower()] >= current_val:
                             time_to_sum = False
                         else:
                             continue
@@ -622,8 +621,12 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     """
 
     def clean_string(s):
+        # normalize and lowercase utt  (replaces words with numbers=
+        s = normalize_en(s, remove_articles=False).lower()
+        # restore some decimal markers
+        s = s.replace("0.5", "half").replace("0.25", "quarter")
         # clean unneeded punctuation and capitalization among other things.
-        s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
+        s = s.replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
             .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
             .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock") \
@@ -1454,6 +1457,9 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
 class EnglishNormalizer(Normalizer):
     with open(resolve_resource_file("text/en-us/normalize.json")) as f:
         _default_config = json.load(f)
+
+    def numbers_to_digits(self, utterance):
+        return _convert_words_to_numbers_en(utterance, ordinals=False)
 
 
 def normalize_en(text, remove_articles=True):

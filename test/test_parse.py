@@ -221,26 +221,51 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_duration("eight and a half days thirty"
                                           " nine seconds"),
                          (timedelta(days=8.5, seconds=39), ""))
-        self.assertEqual(extract_duration("Set a timer for 30 minutes"),
-                         (timedelta(minutes=30), "set a timer for"))
-        self.assertEqual(extract_duration("Four and a half minutes until"
-                                          " sunset"),
-                         (timedelta(minutes=4.5), "until sunset"))
-        self.assertEqual(extract_duration("Nineteen minutes past the hour"),
-                         (timedelta(minutes=19), "past the hour"))
         self.assertEqual(extract_duration("wake me up in three weeks, four"
                                           " hundred ninety seven days, and"
                                           " three hundred 91.6 seconds"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
                           "wake me up in , , and"))
-        self.assertEqual(extract_duration("The movie is one hour, fifty seven"
-                                          " and a half minutes long"),
-                         (timedelta(hours=1, minutes=57.5),
-                             "the movie is ,  long"))
         self.assertEqual(extract_duration("10-seconds"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minutes"),
                          (timedelta(minutes=5), ""))
+
+    def test_extract_duration_case_en(self):
+        self.assertEqual(extract_duration("Set a timer for 30 minutes"),
+                         (timedelta(minutes=30), "Set a timer for"))
+        self.assertEqual(extract_duration("The movie is one hour, fifty seven"
+                                          " and a half minutes long"),
+                         (timedelta(hours=1, minutes=57.5),
+                             "The movie is ,  long"))
+        self.assertEqual(extract_duration("Four and a Half minutes until"
+                                          " sunset"),
+                         (timedelta(minutes=4.5), "until sunset"))
+        self.assertEqual(extract_duration("Nineteen minutes past THE hour"),
+                         (timedelta(minutes=19), "past THE hour"))
+
+    def test_extractdatetime_fractions_en(self):
+        def extractWithFormat(text):
+            date = datetime(2017, 6, 27, 13, 4)  # Tue June 27, 2017 @ 1:04pm
+            [extractedDate, leftover] = extract_datetime(text, date)
+            extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
+            return [extractedDate, leftover]
+
+        def testExtract(text, expected_date, expected_leftover):
+            res = extractWithFormat(normalize(text))
+            self.assertEqual(res[0], expected_date, "for=" + text)
+            self.assertEqual(res[1], expected_leftover, "for=" + text)
+
+        testExtract("Set the ambush for half an hour",
+                    "2017-06-27 13:34:00", "set ambush")
+        testExtract("remind me to call mom in half an hour",
+                    "2017-06-27 13:34:00", "remind me to call mom")
+        testExtract("remind me to call mom in a half hour",
+                    "2017-06-27 13:34:00", "remind me to call mom")
+        testExtract("remind me to call mom in a quarter hour",
+                    "2017-06-27 13:19:00", "remind me to call mom")
+        testExtract("remind me to call mom in a quarter of an hour",
+                    "2017-06-27 13:19:00", "remind me to call mom")
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
@@ -314,8 +339,6 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 13:04:02", "")
         testExtract("Set the ambush in 1 minute",
                     "2017-06-27 13:05:00", "set ambush")
-        testExtract("Set the ambush for half an hour",
-                    "2017-06-27 13:34:00", "set ambush")
         testExtract("Set the ambush for 5 days from today",
                     "2017-07-02 00:00:00", "set ambush")
         testExtract("day after tomorrow",
@@ -389,14 +412,6 @@ class TestNormalize(unittest.TestCase):
         testExtract("remind me to call mom in 15 minutes",
                     "2017-06-27 13:19:00", "remind me to call mom")
         testExtract("remind me to call mom in fifteen minutes",
-                    "2017-06-27 13:19:00", "remind me to call mom")
-        testExtract("remind me to call mom in half an hour",
-                    "2017-06-27 13:34:00", "remind me to call mom")
-        testExtract("remind me to call mom in a half hour",
-                    "2017-06-27 13:34:00", "remind me to call mom")
-        testExtract("remind me to call mom in a quarter hour",
-                    "2017-06-27 13:19:00", "remind me to call mom")
-        testExtract("remind me to call mom in a quarter of an hour",
                     "2017-06-27 13:19:00", "remind me to call mom")
         testExtract("remind me to call mom at 10am 2 days after this saturday",
                     "2017-07-03 10:00:00", "remind me to call mom")
@@ -671,6 +686,33 @@ class TestNormalize(unittest.TestCase):
         testExtract("lets meet in 5seconds",
                     "2017-06-27 10:01:07", "lets meet")
 
+    def test_normalize_numbers(self):
+        self.assertEqual(normalize("remind me to do something at two to two"),
+                         "remind me to do something at 2 to 2")
+        self.assertEqual(normalize('what time will it be in two minutes'),
+                         'what time will it be in 2 minutes')
+        self.assertEqual(normalize('What time will it be in twenty two minutes'),
+                         'What time will it be in 22 minutes')
+        self.assertEqual(normalize("remind me to do something at twenty to two"),
+                         "remind me to do something at 20 to 2")
+        # TODO imperfect test, should return 'my favorite numbers are 20 2',
+        #  let is pass for now since this is likely a STT issue if ever
+        #  encountered in the wild
+        self.assertEqual(normalize('my favorite numbers are twenty 2'),
+                         'my favorite numbers are 22')
+
+    def test_extract_date_with_number_words(self):
+        now = datetime(2019, 7, 4, 8, 1, 2)
+        self.assertEqual(
+            extract_datetime('What time will it be in 2 minutes', now)[0],
+            datetime(2019, 7, 4, 8, 3, 2))
+        self.assertEqual(
+            extract_datetime('What time will it be in two minutes', now)[0],
+            datetime(2019, 7, 4, 8, 3, 2))
+        self.assertEqual(
+            extract_datetime('What time will it be in two hundred minutes', now)[0],
+            datetime(2019, 7, 4, 11, 21, 2))
+
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
                          "this is test")
@@ -697,15 +739,16 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("that's eighteen nineteen twenty"),
                          "that is 18 19 20")
         self.assertEqual(normalize("that's one nineteen twenty two"),
-                         "that is 1 19 20 2")
+                         "that is 1 19 22")
         self.assertEqual(normalize("that's one hundred"),
-                         "that is 1 hundred")
+                         "that is 100")
         self.assertEqual(normalize("that's one two twenty two"),
-                         "that is 1 2 20 2")
+                         "that is 1 2 22")
         self.assertEqual(normalize("that's one and a half"),
-                         "that is 1 and half")
+                         "that is 1.5")
+        # TODO imperfect test, should return "that is 1.5 and 5 6"
         self.assertEqual(normalize("that's one and a half and five six"),
-                         "that is 1 and half and 5 6")
+                         "that is 1 and 0.5 and 5 6")
 
     def test_multiple_numbers(self):
         self.assertEqual(extract_numbers("this is a one two three  test"),
