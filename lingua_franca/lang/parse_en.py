@@ -638,7 +638,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         # normalize and lowercase utt  (replaces words with numbers=
         s = _convert_words_to_numbers_en(s, ordinals=None).lower()
         # restore some decimal markers
-        s = s.replace("0.5", "half").replace("0.25", "quarter")
+       # s = s.replace("0.5", "half").replace("0.25", "quarter")
         # clean unneeded punctuation and capitalization among other things.
         s = s.replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
