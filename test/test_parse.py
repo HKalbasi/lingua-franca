@@ -81,6 +81,18 @@ class TestNormalize(unittest.TestCase):
                                         ordinals=None), 3)
         self.assertEqual(extract_number("this is the 4th",
                                         ordinals=None), 4)
+        self.assertEqual(extract_number(
+            "this is the 7th test", ordinals=True), 7)
+        self.assertEqual(extract_number(
+            "this is the 7th test", ordinals=False), 7)
+        self.assertTrue(extract_number("this is the nth test") is False)
+        self.assertEqual(extract_number("this is the 1st test"), 1)
+        self.assertEqual(extract_number("this is the 2nd test"), 2)
+        self.assertEqual(extract_number("this is the 3rd test"), 3)
+        self.assertEqual(extract_number("this is the 31st test"), 31)
+        self.assertEqual(extract_number("this is the 32nd test"), 32)
+        self.assertEqual(extract_number("this is the 33rd test"), 33)
+        self.assertEqual(extract_number("this is the 34th test"), 34)
 
         # test non ambiguous ordinals
         self.assertEqual(extract_number("this is the first test",
@@ -105,12 +117,13 @@ class TestNormalize(unittest.TestCase):
         # test ambiguous ordinal/fractional
         self.assertEqual(extract_number("this is the third test",
                                         ordinals=True), 3.0)
-        self.assertEqual(extract_number("this is the third test"),
-                         1.0 / 3.0)
+        self.assertEqual(extract_number("this is the third test",
+                                        ordinals=False), 1.0 / 3.0)
         self.assertEqual(extract_number("this is the third test",
                                         ordinals=None), False)
 
-        self.assertEqual(extract_number("one third of a cup"), 1.0 / 3.0)
+        self.assertEqual(extract_number("one third of a cup",
+                                        ordinals=False), 1.0 / 3.0)
         self.assertEqual(extract_number("one third of a cup",
                                         ordinals=True), 3)
         self.assertEqual(extract_number("one third of a cup",
@@ -136,14 +149,14 @@ class TestNormalize(unittest.TestCase):
         #                                ordinals=True), 3)
 
         # test multiple ambiguous
-        self.assertEqual(extract_number("sixth third"),
+        self.assertEqual(extract_number("sixth third", ordinals=False),
                          1 / 6 / 3)
         self.assertEqual(extract_number("sixth third", ordinals=True),
                          3)
         self.assertEqual(extract_number("sixth third", ordinals=None),
                          False)
 
-        self.assertEqual(extract_number("thirty second"), 30)
+        self.assertEqual(extract_number("thirty second", ordinals=False), 30)
         self.assertEqual(extract_number("thirty second", ordinals=None), 30)
         self.assertEqual(extract_number("thirty second", ordinals=True), 32)
 
@@ -153,7 +166,8 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("this is the billionth test",
                                         ordinals=None), False)
 
-        self.assertEqual(extract_number("this is the billionth test"), 1e-9)
+        self.assertEqual(extract_number("this is the billionth test",
+                                        ordinals=False), 1e-9)
         self.assertEqual(extract_number("this is the billionth test",
                                         ordinals=True,
                                         short_scale=False), 1e12)
@@ -163,12 +177,26 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("this is the billionth test",
                                         short_scale=False), 1e-12)
 
-    def test_extract_number(self):
-
-        self.assertEqual(extract_number("this is 2 test"), 2)
+        # test the Nth one
         self.assertEqual(extract_number("the fourth one", ordinals=True), 4.0)
         self.assertEqual(extract_number("the thirty sixth one",
                                         ordinals=True), 36.0)
+        self.assertEqual(extract_number(
+            "you are the second one", ordinals=False), 1)
+        self.assertEqual(extract_number(
+            "you are the second one", ordinals=True), 2)
+        self.assertEqual(extract_number("you are the 1st one",
+                                        ordinals=None), 1)
+        self.assertEqual(extract_number("you are the 2nd one",
+                                        ordinals=None), 2)
+        self.assertEqual(extract_number("you are the 3rd one",
+                                        ordinals=None), 3)
+        self.assertEqual(extract_number("you are the 8th one",
+                                        ordinals=None), 8)
+
+    def test_extract_number(self):
+
+        self.assertEqual(extract_number("this is 2 test"), 2)
         self.assertEqual(extract_number("this is test number 4"), 4)
         self.assertEqual(extract_number("three cups"), 3)
         self.assertEqual(extract_number("1/3 cups"), 1.0 / 3.0)
@@ -249,28 +277,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple of beers"), 2)
         self.assertEqual(extract_number("a couple hundred beers"), 200)
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
-
-        self.assertEqual(extract_number(
-            "this is the 7th test", ordinals=True), 7)
-        self.assertEqual(extract_number(
-            "this is the 7th test", ordinals=False), 7)
-        self.assertTrue(extract_number("this is the nth test") is False)
-        self.assertEqual(extract_number("this is the 1st test"), 1)
-        self.assertEqual(extract_number("this is the 2nd test"), 2)
-        self.assertEqual(extract_number("this is the 3rd test"), 3)
-        self.assertEqual(extract_number("this is the 31st test"), 31)
-        self.assertEqual(extract_number("this is the 32nd test"), 32)
-        self.assertEqual(extract_number("this is the 33rd test"), 33)
-        self.assertEqual(extract_number("this is the 34th test"), 34)
-
-        self.assertEqual(extract_number(
-            "you are the second one", ordinals=False), 1)
-        self.assertEqual(extract_number(
-            "you are the second one", ordinals=True), 2)
-        self.assertEqual(extract_number("you are the 1st one"), 1)
-        self.assertEqual(extract_number("you are the 2nd one"), 2)
-        self.assertEqual(extract_number("you are the 3rd one"), 3)
-        self.assertEqual(extract_number("you are the 8th one"), 8)
         self.assertEqual(extract_number("totally 100%"), 100)
 
     def test_extract_duration_en(self):
@@ -772,6 +778,11 @@ class TestNormalize(unittest.TestCase):
         #  spoken by a human the result is what we expect, if in written form
         #  it is ambiguous but could mean separate numbers
         self.assertEqual(normalize('my favorite numbers are twenty 2'),
+                         'my favorite numbers are 22')
+        # TODO imperfect test, same as above, fixing would impact
+        #  extract_numbers quite a bit and require a non trivial ammount of
+        #  refactoring
+        self.assertEqual(normalize('my favorite numbers are 20 2'),
                          'my favorite numbers are 22')
 
         # test ordinals
