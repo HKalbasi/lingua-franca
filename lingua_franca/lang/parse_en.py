@@ -635,11 +635,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     """
 
     def clean_string(s):
-        # normalize and lowercase utt  (replaces words with numbers=
-        s = _convert_words_to_numbers_en(s, ordinals=None).lower()
-        # restore some decimal markers
+        # normalize and lowercase utt  (replaces words with numbers)
+        s = _convert_words_to_numbers_en(s, ordinals=None)
         # clean unneeded punctuation and capitalization among other things.
-        s = s.replace('?', '').replace('.', '').replace(',', '') \
+        s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
             .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
             .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock") \
