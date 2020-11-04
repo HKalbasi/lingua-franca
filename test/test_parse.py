@@ -149,12 +149,15 @@ class TestNormalize(unittest.TestCase):
         #                                ordinals=True), 3)
 
         # test multiple ambiguous
-        self.assertEqual(extract_number("sixth third", ordinals=False),
-                         1 / 6 / 3)
         self.assertEqual(extract_number("sixth third", ordinals=True),
                          3)
         self.assertEqual(extract_number("sixth third", ordinals=None),
                          False)
+        # TODO this test is imperfect, further discussion needed
+        # "Sixth third" would probably refer to "the sixth instance of a third"
+        # I dunno what should be returned here, don't think it should be cumulative.
+        self.assertEqual(extract_number("sixth third", ordinals=False),
+                         1 / 6 / 3)
 
         self.assertEqual(extract_number("thirty second", ordinals=False), 30)
         self.assertEqual(extract_number("thirty second", ordinals=None), 30)
