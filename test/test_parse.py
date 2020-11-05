@@ -71,6 +71,28 @@ class TestNormalize(unittest.TestCase):
                                    remove_articles=False),
                          "this is an extra test")
 
+    def test_extract_number_priority(self):
+        # sanity check
+        self.assertEqual(extract_number("third", ordinals=True), 3)
+        self.assertEqual(extract_number("sixth", ordinals=True), 6)
+
+        # TODO a suite of tests needs to be written depending on outcome of
+        #  https://github.com/MycroftAI/lingua-franca/issues/152
+        # the tests bellow are flagged as problematic, some of those ARE BROKEN
+        # for now this is considered undefined behaviour!!!
+
+        # NOTE this test is returning the first number, which seems to be
+        # the consensus regarding correct behaviour
+        self.assertEqual(extract_number("Twenty two and Three Fifths",
+                                        ordinals=True), 22)
+
+        # TODO these should return the 1st number, not the last, ordinals
+        #  seem messed up, the rest of the codebase is returning first
+        #  number most likely tests bellow are bugs, i repeat, tests bellow
+        #  are testing FOR THE "WRONG" VALUE
+        self.assertEqual(extract_number("sixth third", ordinals=True), 3)
+        self.assertEqual(extract_number("third sixth", ordinals=True), 6)
+
     def test_extract_number_ambiguous(self):
         # test explicit ordinals
         self.assertEqual(extract_number("this is the 1st",
@@ -143,25 +165,16 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(extract_number("Twenty two and Three Fifths"), 22.6)
 
-        # TODO fix me - see issue #152
-        # these currently return 22 instead of 3
-        #self.assertEqual(extract_number("Twenty two and Three Fifths",
-        #                                ordinals=True), 3)
-
         # test multiple ambiguous
-        self.assertEqual(extract_number("sixth third", ordinals=True),
-                         3)
-        self.assertEqual(extract_number("sixth third", ordinals=None),
-                         False)
+        self.assertEqual(extract_number("sixth third", ordinals=None), False)
+        self.assertEqual(extract_number("thirty second", ordinals=False), 30)
+        self.assertEqual(extract_number("thirty second", ordinals=None), 30)
+        self.assertEqual(extract_number("thirty second", ordinals=True), 32)
         # TODO this test is imperfect, further discussion needed
         # "Sixth third" would probably refer to "the sixth instance of a third"
         # I dunno what should be returned here, don't think it should be cumulative.
         self.assertEqual(extract_number("sixth third", ordinals=False),
                          1 / 6 / 3)
-
-        self.assertEqual(extract_number("thirty second", ordinals=False), 30)
-        self.assertEqual(extract_number("thirty second", ordinals=None), 30)
-        self.assertEqual(extract_number("thirty second", ordinals=True), 32)
 
         # test big numbers / short vs long scale
         self.assertEqual(extract_number("this is the billionth test",
