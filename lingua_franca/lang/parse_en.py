@@ -307,6 +307,8 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 tokens[idx + 1] = Token("", idx)
                 next_word = ""
 
+        # TODO replaces the wall of "and" and "or" with all() or any() as
+        #  appropriate, the whole codebase should be checked for this pattern
         if word not in string_num_scale and \
                 word not in _STRING_NUM_EN and \
                 word not in _SUMS_EN and \
@@ -320,7 +322,6 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             if number_words and not all([w.lower() in _ARTICLES_EN |
                                          _NEGATIVES_EN for w in words_only]):
                 break
-
             else:
                 number_words = []
                 continue
