@@ -320,6 +320,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             if number_words and not all([w.lower() in _ARTICLES_EN |
                                          _NEGATIVES_EN for w in words_only]):
                 break
+
             else:
                 number_words = []
                 continue
@@ -333,11 +334,11 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         elif prev_word in _SUMS_EN and word in _SUMS_EN:
             number_words = [token]
-        elif ordinals is None and token.word in string_num_ordinal:
+        elif ordinals is None and \
+                (word in string_num_ordinal or word in _SPOKEN_EXTRA_NUM_EN):
             # flagged to ignore this token
             continue
         else:
-
             number_words.append(token)
 
         # is this word already a number ?

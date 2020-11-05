@@ -851,10 +851,8 @@ class TestNormalize(unittest.TestCase):
                          "that is 1 2 22")
         self.assertEqual(normalize("that's one and a half"),
                          "that is 1 and half")
-
-        # TODO fix me
-        #self.assertEqual(normalize("that's one and a half and five six"),
-        #                 "that is 1 and half and 5 6")
+        self.assertEqual(normalize("that's one and a half and five six"),
+                         "that is 1 and half and 5 6")
 
     def test_multiple_numbers(self):
         self.assertEqual(extract_numbers("this is a one two three  test"),
